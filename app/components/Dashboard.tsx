@@ -5,6 +5,7 @@ import { Category, CAT_META, CAT_ORDER, SEED_NOTES, Note } from '@/app/data/note
 import { supabase } from '@/lib/supabase';
 import { Sidebar } from './Sidebar';
 import { NoteCard } from './NoteCard';
+import { AddNoteModal } from './AddNoteModal';
 import { CatIcon, SearchIcon, PlusIcon } from './icons';
 
 export function Dashboard() {
@@ -12,6 +13,7 @@ export function Dashboard() {
   const [query, setQuery] = useState('');
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     async function loadNotes() {
@@ -45,21 +47,19 @@ export function Dashboard() {
     await supabase.from('notes').update({ fav: newFav }).eq('id', id);
   };
 
-  const addNote = async () => {
+  const addNote = async (fields: { cat: Category; title: string; code: string; desc: string; tags: string[] }) => {
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const now = new Date();
     const date = `${months[now.getMonth()]} ${now.getDate()}`;
-    const newNote = {
-      cat: 'other' as Category,
-      fav: false,
-      title: 'New note',
-      code: '// write a command or shortcut',
-      desc: 'Describe what this command does and when to use it.',
-      tags: ['new'],
-      date,
-    };
-    const { data, error } = await supabase.from('notes').insert(newNote).select().single();
-    if (!error && data) setNotes(ns => [data as Note, ...ns]);
+    const { data, error } = await supabase
+      .from('notes')
+      .insert({ ...fields, fav: false, date })
+      .select()
+      .single();
+    if (!error && data) {
+      setNotes(ns => [data as Note, ...ns]);
+      setShowModal(false);
+    }
   };
 
   const q = query.trim().toLowerCase();
@@ -79,6 +79,8 @@ export function Dashboard() {
   const headerTitle = activeCat === 'all' ? 'All Notes' : CAT_META[activeCat].name;
 
   return (
+    <>
+    {showModal && <AddNoteModal onSave={addNote} onClose={() => setShowModal(false)} />}
     <div className="flex h-screen w-full overflow-hidden" style={{ fontFamily: "'Inter', system-ui, sans-serif", background: '#fff', color: 'rgb(23,23,23)', WebkitFontSmoothing: 'antialiased' }}>
       <Sidebar activeCat={activeCat} counts={counts} total={notes.length} onSelect={setActiveCat} />
 
@@ -92,7 +94,7 @@ export function Dashboard() {
               <div className="mt-1" style={{ fontSize: '16px', color: 'rgb(82,82,82)' }}>Your personal dev learning notebook</div>
             </div>
             <button
-              onClick={addNote}
+              onClick={() => setShowModal(true)}
               className="inline-flex items-center gap-2 border-none rounded-lg cursor-pointer font-semibold"
               style={{ background: 'rgb(127,86,217)', color: '#fff', padding: '11px 16px', fontSize: '15px', boxShadow: '0 1px 2px rgba(16,24,40,0.08)', fontFamily: 'inherit' }}
             >
@@ -164,5 +166,6 @@ export function Dashboard() {
         </div>
       </main>
     </div>
+    </>
   );
 }
