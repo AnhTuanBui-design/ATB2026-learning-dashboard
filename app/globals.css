@@ -15,6 +15,15 @@ body { margin: 0; }
 
 .stat-card:hover { box-shadow: 0 4px 12px rgba(16,24,40,0.08) !important; }
 
+/* Card hover actions */
+.note-action-hidden {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.note-card:hover .note-action-hidden { opacity: 1; }
+.note-action:hover { background: rgb(245,245,245); color: rgb(23,23,23); }
+.note-action[title="Delete"]:hover { color: rgb(217,45,32); background: rgb(254,243,242); }
+
 .search-in:focus {
   border-color: rgb(214,187,251) !important;
   box-shadow: 0 0 0 4px rgb(249,245,255) !important;

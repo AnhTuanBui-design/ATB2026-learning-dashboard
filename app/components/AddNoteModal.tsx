@@ -1,20 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { Category, CAT_META, CAT_ORDER } from '@/app/data/notes';
+import { Category, CAT_META, CAT_ORDER, Note } from '@/app/data/notes';
 import { CatIcon } from './icons';
 
 interface Props {
+  note?: Note;
   onSave: (note: { cat: Category; title: string; code: string; desc: string; tags: string[] }) => void;
   onClose: () => void;
 }
 
-export function AddNoteModal({ onSave, onClose }: Props) {
-  const [cat, setCat] = useState<Category>('git');
-  const [title, setTitle] = useState('');
-  const [code, setCode] = useState('');
-  const [desc, setDesc] = useState('');
-  const [tags, setTags] = useState('');
+export function AddNoteModal({ note, onSave, onClose }: Props) {
+  const isEdit = !!note;
+  const [cat, setCat] = useState<Category>(note?.cat ?? 'git');
+  const [title, setTitle] = useState(note?.title ?? '');
+  const [code, setCode] = useState(note?.code ?? '');
+  const [desc, setDesc] = useState(note?.desc ?? '');
+  const [tags, setTags] = useState(note?.tags.join(', ') ?? '');
 
   const handleSave = () => {
     if (!title.trim()) return;
@@ -40,7 +42,7 @@ export function AddNoteModal({ onSave, onClose }: Props) {
         {/* Header */}
         <div className="flex items-start justify-between p-6" style={{ borderBottom: '1px solid rgb(229,229,229)' }}>
           <div>
-            <div className="font-bold text-lg" style={{ color: 'rgb(23,23,23)' }}>Add new note</div>
+            <div className="font-bold text-lg" style={{ color: 'rgb(23,23,23)' }}>{isEdit ? 'Edit note' : 'Add new note'}</div>
             <div className="text-sm mt-0.5" style={{ color: 'rgb(115,115,115)' }}>Save a command, shortcut, or tip.</div>
           </div>
           <button
@@ -167,7 +169,7 @@ export function AddNoteModal({ onSave, onClose }: Props) {
               cursor: title.trim() ? 'pointer' : 'not-allowed',
             }}
           >
-            Save note
+            {isEdit ? 'Save changes' : 'Save note'}
           </button>
           <button
             onClick={onClose}

@@ -14,6 +14,7 @@ export function Dashboard() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState<Note | null>(null);
 
   useEffect(() => {
     async function loadNotes() {
@@ -62,6 +63,18 @@ export function Dashboard() {
     }
   };
 
+  const updateNote = async (fields: { cat: Category; title: string; code: string; desc: string; tags: string[] }) => {
+    if (!editing) return;
+    setNotes(ns => ns.map(n => n.id === editing.id ? { ...n, ...fields } : n));
+    await supabase.from('notes').update(fields).eq('id', editing.id);
+    setEditing(null);
+  };
+
+  const deleteNote = async (id: number) => {
+    setNotes(ns => ns.filter(n => n.id !== id));
+    await supabase.from('notes').delete().eq('id', id);
+  };
+
   const q = query.trim().toLowerCase();
 
   const filtered = useMemo(() => notes.filter(n => {
@@ -81,6 +94,7 @@ export function Dashboard() {
   return (
     <>
     {showModal && <AddNoteModal onSave={addNote} onClose={() => setShowModal(false)} />}
+    {editing && <AddNoteModal note={editing} onSave={updateNote} onClose={() => setEditing(null)} />}
     <div className="flex h-screen w-full overflow-hidden" style={{ fontFamily: "'Inter', system-ui, sans-serif", background: '#fff', color: 'rgb(23,23,23)', WebkitFontSmoothing: 'antialiased' }}>
       <Sidebar activeCat={activeCat} counts={counts} total={notes.length} onSelect={setActiveCat} />
 
@@ -153,7 +167,7 @@ export function Dashboard() {
           ) : (
             <div style={{ columnCount: 3, columnGap: '24px' }}>
               {filtered.map(note => (
-                <NoteCard key={note.id} note={note} onStar={() => toggleStar(note.id)} />
+                <NoteCard key={note.id} note={note} onStar={() => toggleStar(note.id)} onEdit={() => setEditing(note)} onDelete={() => deleteNote(note.id)} />
               ))}
               {filtered.length === 0 && (
                 <div className="text-center py-16" style={{ color: 'rgb(115,115,115)', fontSize: '16px' }}>
