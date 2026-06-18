@@ -101,7 +101,7 @@ export function NoteCard({ note, onStar, onEdit, onDelete }: Props) {
       </div>
 
       <div className="mt-3.5 text-sm leading-relaxed" style={{ color: 'rgb(82,82,82)' }}>
-        {note.desc}
+        {note.description}
       </div>
 
       <div className="mt-4 flex items-center flex-wrap gap-2">

@@ -6,7 +6,7 @@ import { CatIcon } from './icons';
 
 interface Props {
   note?: Note;
-  onSave: (note: { cat: Category; title: string; code: string; desc: string; tags: string[] }) => void;
+  onSave: (note: { cat: Category; title: string; code: string; description: string; tags: string[] }) => void;
   onClose: () => void;
 }
 
@@ -15,7 +15,7 @@ export function AddNoteModal({ note, onSave, onClose }: Props) {
   const [cat, setCat] = useState<Category>(note?.cat ?? 'git');
   const [title, setTitle] = useState(note?.title ?? '');
   const [code, setCode] = useState(note?.code ?? '');
-  const [desc, setDesc] = useState(note?.desc ?? '');
+  const [description, setDesc] = useState(note?.description ?? '');
   const [tags, setTags] = useState(note?.tags.join(', ') ?? '');
 
   const handleSave = () => {
@@ -24,7 +24,7 @@ export function AddNoteModal({ note, onSave, onClose }: Props) {
       cat,
       title: title.trim(),
       code: code.trim(),
-      desc: desc.trim(),
+      description: description.trim(),
       tags: tags.split(',').map(t => t.trim()).filter(Boolean),
     });
   };
@@ -128,7 +128,7 @@ export function AddNoteModal({ note, onSave, onClose }: Props) {
               Notes <span className="font-normal text-xs" style={{ color: 'rgb(115,115,115)' }}>optional explanation</span>
             </label>
             <textarea
-              value={desc}
+              value={description}
               onChange={e => setDesc(e.target.value)}
               placeholder="e.g. Switches you to the dev-AnhTuan branch."
               rows={3}

@@ -48,7 +48,7 @@ export function Dashboard() {
     await supabase.from('notes').update({ fav: newFav }).eq('id', id);
   };
 
-  const addNote = async (fields: { cat: Category; title: string; code: string; desc: string; tags: string[] }) => {
+  const addNote = async (fields: { cat: Category; title: string; code: string; description: string; tags: string[] }) => {
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const now = new Date();
     const date = `${months[now.getMonth()]} ${now.getDate()}`;
@@ -63,7 +63,7 @@ export function Dashboard() {
     }
   };
 
-  const updateNote = async (fields: { cat: Category; title: string; code: string; desc: string; tags: string[] }) => {
+  const updateNote = async (fields: { cat: Category; title: string; code: string; description: string; tags: string[] }) => {
     if (!editing) return;
     setNotes(ns => ns.map(n => n.id === editing.id ? { ...n, ...fields } : n));
     await supabase.from('notes').update(fields).eq('id', editing.id);
@@ -80,7 +80,7 @@ export function Dashboard() {
   const filtered = useMemo(() => notes.filter(n => {
     if (activeCat !== 'all' && n.cat !== activeCat) return false;
     if (!q) return true;
-    return (n.title + ' ' + n.code + ' ' + n.desc + ' ' + n.tags.join(' ')).toLowerCase().includes(q);
+    return (n.title + ' ' + n.code + ' ' + n.description + ' ' + n.tags.join(' ')).toLowerCase().includes(q);
   }), [notes, activeCat, q]);
 
   const counts = useMemo(() => {
