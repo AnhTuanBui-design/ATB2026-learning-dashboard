@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Category, CAT_META, CAT_ORDER, SEED_NOTES, Note } from '@/app/data/notes';
+import { supabase } from '@/lib/supabase';
 import { Sidebar } from './Sidebar';
 import { NoteCard } from './NoteCard';
 import { CatIcon, SearchIcon, PlusIcon } from './icons';
@@ -9,21 +10,56 @@ import { CatIcon, SearchIcon, PlusIcon } from './icons';
 export function Dashboard() {
   const [activeCat, setActiveCat] = useState<Category | 'all'>('all');
   const [query, setQuery] = useState('');
-  const [notes, setNotes] = useState<Note[]>(SEED_NOTES);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const toggleStar = (id: number) =>
-    setNotes(ns => ns.map(n => n.id === id ? { ...n, fav: !n.fav } : n));
+  useEffect(() => {
+    async function loadNotes() {
+      const { data, error } = await supabase
+        .from('notes')
+        .select('*')
+        .order('created_at', { ascending: true });
 
-  const addNote = () => {
+      if (error) { console.error(error); return; }
+
+      if (data && data.length > 0) {
+        setNotes(data as Note[]);
+      } else {
+        // Seed initial notes on first load
+        const { data: inserted, error: seedError } = await supabase
+          .from('notes')
+          .insert(SEED_NOTES.map(({ id: _, ...n }) => n))
+          .select();
+        if (!seedError && inserted) setNotes(inserted as Note[]);
+      }
+      setLoading(false);
+    }
+    loadNotes();
+  }, []);
+
+  const toggleStar = async (id: number) => {
+    const note = notes.find(n => n.id === id);
+    if (!note) return;
+    const newFav = !note.fav;
+    setNotes(ns => ns.map(n => n.id === id ? { ...n, fav: newFav } : n));
+    await supabase.from('notes').update({ fav: newFav }).eq('id', id);
+  };
+
+  const addNote = async () => {
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const now = new Date();
     const date = `${months[now.getMonth()]} ${now.getDate()}`;
-    setNotes(ns => [{
-      id: Date.now(), cat: 'other', fav: false,
-      title: 'New note', code: '// write a command or shortcut',
+    const newNote = {
+      cat: 'other' as Category,
+      fav: false,
+      title: 'New note',
+      code: '// write a command or shortcut',
       desc: 'Describe what this command does and when to use it.',
-      tags: ['new'], date,
-    }, ...ns]);
+      tags: ['new'],
+      date,
+    };
+    const { data, error } = await supabase.from('notes').insert(newNote).select().single();
+    if (!error && data) setNotes(ns => [data as Note, ...ns]);
   };
 
   const q = query.trim().toLowerCase();
@@ -83,14 +119,11 @@ export function Dashboard() {
                     fontFamily: 'inherit',
                   }}
                 >
-                  <span
-                    className="flex items-center justify-center flex-none rounded-[10px]"
-                    style={{ width: 40, height: 40, background: meta.tint, color: meta.color }}
-                  >
+                  <span className="flex items-center justify-center flex-none rounded-[10px]" style={{ width: 40, height: 40, background: meta.tint, color: meta.color }}>
                     <CatIcon id={id} />
                   </span>
                   <span className="flex flex-col items-start" style={{ lineHeight: 1.15 }}>
-                    <span className="font-bold" style={{ fontSize: '20px', color: 'rgb(23,23,23)' }}>{counts[id]}</span>
+                    <span className="font-bold" style={{ fontSize: '20px', color: 'rgb(23,23,23)' }}>{counts[id] ?? 0}</span>
                     <span style={{ fontSize: '13px', color: 'rgb(82,82,82)' }}>{meta.name}</span>
                   </span>
                 </button>
@@ -108,29 +141,25 @@ export function Dashboard() {
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Search notes, commands, shortcuts…"
-              style={{
-                height: '48px',
-                border: '1px solid rgb(212,212,212)',
-                padding: '0 16px 0 46px',
-                fontSize: '16px',
-                fontFamily: 'inherit',
-                color: 'rgb(23,23,23)',
-                boxShadow: '0 1px 2px rgba(16,24,40,0.05)',
-              }}
+              style={{ height: '48px', border: '1px solid rgb(212,212,212)', padding: '0 16px 0 46px', fontSize: '16px', fontFamily: 'inherit', color: 'rgb(23,23,23)', boxShadow: '0 1px 2px rgba(16,24,40,0.05)' }}
             />
           </div>
 
-          {/* Masonry grid */}
-          <div style={{ columnCount: 3, columnGap: '24px' }}>
-            {filtered.map(note => (
-              <NoteCard key={note.id} note={note} onStar={() => toggleStar(note.id)} />
-            ))}
-            {filtered.length === 0 && (
-              <div className="text-center py-16" style={{ color: 'rgb(115,115,115)', fontSize: '16px', columnSpan: 'all' }}>
-                No notes match your search.
-              </div>
-            )}
-          </div>
+          {/* Notes grid */}
+          {loading ? (
+            <div className="text-center py-16" style={{ color: 'rgb(115,115,115)', fontSize: '16px' }}>Loading notes…</div>
+          ) : (
+            <div style={{ columnCount: 3, columnGap: '24px' }}>
+              {filtered.map(note => (
+                <NoteCard key={note.id} note={note} onStar={() => toggleStar(note.id)} />
+              ))}
+              {filtered.length === 0 && (
+                <div className="text-center py-16" style={{ color: 'rgb(115,115,115)', fontSize: '16px' }}>
+                  No notes match your search.
+                </div>
+              )}
+            </div>
+          )}
 
         </div>
       </main>
